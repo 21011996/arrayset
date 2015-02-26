@@ -1,117 +1,119 @@
 package ru.ifmo.ctddev.kachalskiy.arrayset;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.SortedSet;
+import java.util.*;
 
 /**
  * Created by Илья on 25.02.2015.
  */
-public class ArraySet extends SortedSet<E> {
+public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
+    protected final Comparator<? super E> comparator;
+    protected final List<E> array;
+    protected boolean defaultComparator;
 
-    @Override
-    public Comparator<? super E> comparator() {
-        return null;
+    public ArraySet() {
+        comparator = null;
+        array = new ArrayList<>();
     }
 
-    @Override
-    public SortedSet<E> subSet(E fromElement, E toElement) {
-        return null;
+    public ArraySet(Collection<E> collection, Comparator<? super E> comparator) {
+        List<E> tmp = new ArrayList<>(collection);
+        this.comparator = comparator;
+        Collections.sort(tmp, comparator);
+        List<E> uniqueSet = new ArrayList<>();
+        if (tmp.size() > 0) {
+            uniqueSet.add(tmp.get(0));
+        }
+        for (int i = 1; i < tmp.size(); ++i) {
+            if (comparator.compare(uniqueSet.get(uniqueSet.size() - 1),
+                    tmp.get(i)) != 0) {
+                uniqueSet.add(tmp.get(i));
+            }
+        }
+        array = new ArrayList<>(uniqueSet);
+        defaultComparator = false;
     }
 
-    @Override
-    public SortedSet<E> headSet(E toElement) {
-        return null;
+    protected ArraySet(List<E> collection, Comparator<? super E> comparator,
+                       boolean defaultComparator) {
+        this.array = collection;
+        this.comparator = comparator;
+        this.defaultComparator = defaultComparator;
     }
 
-    @Override
-    public SortedSet<E> tailSet(E fromElement) {
-        return null;
+    public ArraySet(Collection<E> c) {
+        this(c, new Comparator<E>() {
+            @SuppressWarnings("unchecked")
+            public int compare(E o1, E o2) {
+                return ((Comparable<? super E>) o1).compareTo(o2);
+            }
+        });
+        defaultComparator = true;
     }
 
-    @Override
-    public E first() {
-        return null;
-    }
-
-    @Override
-    public E last() {
-        return null;
-    }
-
-    @Override
-    public int size() {
-        return 0;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return false;
-    }
-
-    @Override
+    @SuppressWarnings("unchecked")
     public boolean contains(Object o) {
-        return false;
+        return Collections.binarySearch(array, (E) o, comparator) >= 0;
     }
 
-    @Override
     public Iterator<E> iterator() {
-        return null;
+        return new Iterator<E>() {
+            Iterator<E> it = array.iterator();
+
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            public E next() {
+                return it.next();
+            }
+
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
-    @Override
-    public Object[] toArray() {
-        return new Object[0];
+    public int size() {
+        return array.size();
     }
 
-    @Override
-    public <T> T[] toArray(T[] a) {
-        return null;
+    public Comparator<? super E> comparator() {
+        return defaultComparator ? null : comparator;
     }
 
-    @Override
-    public boolean add(E e) {
-        return false;
+    public SortedSet<E> subSet(E fromElement, E toElement) {
+        return tailSet(fromElement).headSet(toElement);
     }
 
-    @Override
-    public boolean remove(Object o) {
-        return false;
+    public SortedSet<E> headSet(E toElement) {
+        int index = Collections.binarySearch(array, toElement, comparator);
+        if (index < 0) {
+            index = -index - 1;
+        }
+        return new ArraySet<E>(array.subList(0, index), comparator,
+                defaultComparator);
     }
 
-    @Override
-    public boolean containsAll(Collection<?> c) {
-        return false;
+    public SortedSet<E> tailSet(E fromElement) {
+        int index = Collections.binarySearch(array, fromElement, comparator);
+        if (index < 0) {
+            index = -index - 1;
+        }
+        return new ArraySet<E>(array.subList(index, array.size()), comparator,
+                defaultComparator);
     }
 
-    @Override
-    public boolean addAll(Collection<? extends E> c) {
-        return false;
+    public E first() {
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        return array.get(0);
     }
 
-    @Override
-    public boolean retainAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public boolean removeAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public void clear() {
-
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return 0;
+    public E last() {
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        return array.get(size() - 1);
     }
 }
